@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Financial Entry System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    input[type="text"], input[type="number"], input[type="date"] {
+      width: 100%;
+      padding: 5px;
+    }
+    .btn {
+      padding: 5px 10px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    h2 {
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Financial Data Entry System</h1>
+  <label>Financial Year: <input type="text" id="financialYear" placeholder="2024-2025" /></label>
+  <br/><br/>
+
+  <!-- Section Template -->
+  <div id="sections"></div>
+
+  <button class="btn" onclick="addSection('Jodhpur Tyres Payment', ['Chq No.', 'Date', 'Amount', 'Remark'])">Add Jodhpur Tyres Payment</button>
+  <button class="btn" onclick="addSection('Bike Purchase', ['Sr.', 'Invoice No.', 'Date', 'Amount', 'Remark'])">Add Bike Purchase</button>
+  <button class="btn" onclick="addSection('Parts Purchase', ['Sr.', 'Invoice No.', 'Date', 'Amount', 'Remark'])">Add Parts Purchase</button>
+  <br/><br/>
+  <button class="btn" onclick="window.print()">Print</button>
+  <button class="btn" onclick="downloadPDF()">Download PDF</button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    let sectionId = 0;
+
+    function addSection(title, columns) {
+      sectionId++;
+      const secId = 'section' + sectionId;
+
+      let html = `<h2>${title}</h2>`;
+      html += `<table id="${secId}">
+        <thead><tr>`;
+      columns.forEach(col => {
+        html += `<th>${col}</th>`;
+      });
+      html += `<th>Action</th></tr></thead><tbody></tbody>`;
+      html += `<tfoot><tr>`;
+      columns.forEach(col => {
+        if (col === 'Amount') {
+          html += `<td>Total: <span class="total">0</span></td>`;
+        } else {
+          html += `<td></td>`;
+        }
+      });
+      html += `<td></td></tr></tfoot>`;
+      html += `</table>
+      <button class="btn" onclick="addRow('${secId}', ${JSON.stringify(columns)})">Add Row</button><br/><br/>`;
+
+      document.getElementById('sections').insertAdjacentHTML('beforeend', html);
+      addRow(secId, columns);
+    }
+
+    function addRow(tableId, columns) {
+      const table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+      const row = document.createElement('tr');
+      columns.forEach(col => {
+        let inputType = (col.toLowerCase().includes('date')) ? 'date' : (col.toLowerCase().includes('amount')) ? 'number' : 'text';
+        row.innerHTML += `<td><input type="${inputType}" oninput="updateTotal('${tableId}')" /></td>`;
+      });
+      row.innerHTML += `<td><button class="btn" onclick="this.parentElement.parentElement.remove(); updateTotal('${tableId}')">Remove</button></td>`;
+      table.appendChild(row);
+      updateTotal(tableId);
+    }
+
+    function updateTotal(tableId) {
+      const table = document.getElementById(tableId);
+      const amountIndex = Array.from(table.rows[0].cells).findIndex(th => th.innerText === 'Amount');
+      let total = 0;
+      for (let i = 1; i < table.rows.length - 1; i++) {
+        const val = parseFloat(table.rows[i].cells[amountIndex].querySelector('input')?.value || 0);
+        total += val;
+      }
+      table.querySelector('tfoot .total').innerText = total.toFixed(2);
+    }
+
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Financial Entry System\nYear: " + document.getElementById('financialYear').value, 10, 10);
+      doc.html(document.body, {
+        callback: function (doc) {
+          doc.save("financial-entry.pdf");
+        },
+        x: 10,
+        y: 20,
+        width: 180
+      });
+    }
+  </script>
+</body>
+</html>
+
